@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Invoice Fraud Detection</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  color: #e0e7ff;
+
+  background: linear-gradient(-45deg, #0f172a, #1e3a8a, #312e81, #0f172a);
+  background-size: 400% 400%;
+  animation: gradientMove 12s ease infinite;
+
+  min-height: 100vh;
+  overflow-y: auto;
+
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+#networkCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, transparent 40%, #020617 100%);
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 750px;
+  padding: 30px;
+
+  background: rgba(30, 41, 59, 0.65);
+  backdrop-filter: blur(25px);
+  border-radius: 20px;
+}
+
+.container::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120%;
+  height: 120px;
+  background: radial-gradient(circle, rgba(99,102,241,0.5), transparent);
+  filter: blur(40px);
+  z-index: -1;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.section h3 {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+input[type="file"] {
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #cbd5f5;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  color: white;
+  border: none;
+  font-size: 15px;
+
+  position: relative;
+  overflow: hidden;
+
+  transition: all 0.3s ease;
+
+  box-shadow:
+    0 0 20px rgba(99,102,241,0.4),
+    0 0 40px rgba(59,130,246,0.2);
+}
+
+button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 0 30px rgba(99,102,241,0.7),
+    0 0 60px rgba(59,130,246,0.4);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.4),
+    transparent
+  );
+
+  transform: skewX(-20deg);
+}
+
+button:hover::before {
+  animation: shimmer 0.8s forwards;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 150%; }
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow:
+      0 0 15px rgba(99,102,241,0.3),
+      0 0 30px rgba(59,130,246,0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(99,102,241,0.6),
+      0 0 50px rgba(59,130,246,0.4);
+  }
+  100% {
+    box-shadow:
+      0 0 15px rgba(99,102,241,0.3),
+      0 0 30px rgba(59,130,246,0.2);
+  }
+}
+
+button {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+.result {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.result.real { color: #4ade80; }
+.result.fraud { color: #f87171; }
+
+.section {
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.7);
+}
+
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+.check {
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.pass {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.fail {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.graph-box {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.graph-safe {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.graph-warning {
+  background: rgba(250, 204, 21, 0.2);
+  color: #fde047;
+}
+
+</style>
+</head>
+
+<body>
+
+<canvas id="networkCanvas"></canvas>
+
+<div class="container">
+
+  <h1>Invoice Fraud Detection</h1>
+
+  <input type="file" id="file" />
+  <button onclick="analyze()">Analyze Invoice</button>
+
+  <div id="resultBox" class="result"></div>
+
+  <div class="section">
+    <h3>OCR Extracted Text</h3>
+    <pre id="ocrText"></pre>
+  </div>
+
+  <div class="section">
+    <h3>Feature Analysis</h3>
+    <div id="checks"></div>
+  </div>
+
+  <div class="section">
+    <h3>Graph Analysis</h3>
+    <div id="graphResult"></div>
+  </div>
+
+</div>
+
+<script>
+async function analyze() {
+  const file = document.getElementById("file").files[0];
+  if (!file) return alert("Upload file");
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const resultBox = document.getElementById("resultBox");
+  const ocrBox = document.getElementById("ocrText");
+  const checks = document.getElementById("checks");
+  const graphBox = document.getElementById("graphResult");
+
+  resultBox.innerText = "Processing...";
+  checks.innerHTML = "";
+  graphBox.innerHTML = "";
+
+  const res = await fetch("/predict", { method: "POST", body: formData });
+  const data = await res.json();
+
+  resultBox.className = "result " + data.prediction.toLowerCase();
+  resultBox.innerText = data.prediction;
+
+  ocrBox.innerText = data.ocr_text;
+
+  const featureMap = [
+    ["GSTIN Valid", data.features.gstin_valid === 1],
+    ["Foreign Currency", data.features.foreign_currency === 0],
+    ["Future Date", data.features.future_date === 0],
+    ["Suspicious Vendor", data.features.suspicious_vendor === 0],
+    ["Amount Anomaly", data.features.amount_anomaly === 0],
+  ];
+
+  featureMap.forEach(f => {
+    const div = document.createElement("div");
+    div.className = "check " + (f[1] ? "pass" : "fail");
+    div.innerText = f[0];
+    checks.appendChild(div);
+  });
+
+  const div = document.createElement("div");
+
+  if (data.prediction.toLowerCase() === "fraud") {
+    div.className = "graph-box graph-warning";
+    div.innerText = "Suspicious activity detected";
+  } else {
+    if (data.graph_flag === 1) {
+      div.className = "graph-box graph-safe";
+      div.innerText = "No suspicious relationships";
+    } else {
+      div.className = "graph-box graph-warning";
+      div.innerText = "Suspicious network detected";
+    }
+  }
+
+  graphBox.appendChild(div);
+}
+
+const canvas = document.getElementById("networkCanvas");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  createNodes();
+}
+window.addEventListener("resize", resizeCanvas);
+
+let nodes = [];
+
+function createNodes() {
+  nodes = [];
+  const spacing = 120;
+
+  for (let x = 0; x < canvas.width; x += spacing) {
+    for (let y = 0; y < canvas.height; y += spacing) {
+      nodes.push({
+        x: x + Math.random() * 60,
+        y: y + Math.random() * 60,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        type: Math.random() > 0.75 ? "fraud" : "safe",
+        pulse: Math.random() * Math.PI * 2
+      });
+    }
+  }
+}
+
+resizeCanvas();
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.lineCap = "round";
+
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      let dx = nodes[i].x - nodes[j].x;
+      let dy = nodes[i].y - nodes[j].y;
+      let dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 140) {
+        let opacity = 1 - dist / 140;
+
+        ctx.strokeStyle = `rgba(96,165,250,${0.7 + opacity * 0.3})`;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.stroke();
+
+        ctx.strokeStyle = `rgba(59,130,246,${opacity * 0.35})`;
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  nodes.forEach(node => {
+    node.pulse += 0.04;
+    let size = 2 + Math.sin(node.pulse);
+
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+
+    ctx.fillStyle = node.type === "fraud" ? "#ff5c5c" : "#22c55e";
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = 15;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    node.x += node.vx;
+    node.y += node.vy;
+
+    if (node.x < 0) node.x = canvas.width;
+    if (node.x > canvas.width) node.x = 0;
+    if (node.y < 0) node.y = canvas.height;
+    if (node.y > canvas.height) node.y = 0;
+  });
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+</body>
+</html>
