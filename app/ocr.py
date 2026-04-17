@@ -2,6 +2,7 @@ import pytesseract
 from PIL import Image
 import io
 
+# Try importing PDF support
 try:
     from pdf2image import convert_from_bytes
     PDF_AVAILABLE = True
@@ -11,11 +12,11 @@ except:
 
 def extract_text(file_bytes):
 
-    # Detect PDF
+    # 📄 Detect PDF
     if file_bytes[:4] == b"%PDF":
 
         if not PDF_AVAILABLE:
-            return "PDF processing not available on server. Please upload image."
+            return "PDF not supported on server"
 
         try:
             images = convert_from_bytes(file_bytes)
@@ -24,17 +25,25 @@ def extract_text(file_bytes):
             for img in images:
                 text += pytesseract.image_to_string(img) + "\n"
 
+            if not text.strip():
+                return "PDF processed but no text found"
+
             return text
 
         except Exception as e:
             print("PDF ERROR:", e)
-            return "Error processing PDF. Try uploading image."
+            return "PDF processing failed"
 
-    # Otherwise → image
+
     try:
         image = Image.open(io.BytesIO(file_bytes))
-        return pytesseract.image_to_string(image)
+        text = pytesseract.image_to_string(image)
+
+        if not text.strip():
+            return "OCR failed: no text detected"
+
+        return text
 
     except Exception as e:
         print("IMAGE ERROR:", e)
-        return "Error processing image."
+        return "OCR failed: tesseract not available on server"
