@@ -20,20 +20,21 @@ A full-stack application that detects fraudulent invoices using OCR, feature eng
 invoice-fraud-detection/
 │
 ├── app/
-│   ├── main.py          # FastAPI entry point
-│   ├── predict.py       # Prediction logic
-│   ├── features.py      # Feature extraction
-│   ├── graph.py         # Graph-based detection
-│   ├── ocr.py           # OCR processing
+│   ├── main.py
+│   ├── predict.py
+│   ├── features.py
+│   ├── graph.py
+│   ├── ocr.py
 │
 ├── model/
 │   ├── fraud_model.pkl
 │   └── features.pkl
 │
 ├── static/
-│   └── index.html       # Frontend UI
+│   └── index.html
 │
 ├── requirements.txt
+├── Dockerfile        
 ├── render.yaml
 └── README.md
 ```
@@ -80,9 +81,38 @@ http://127.0.0.1:8000
 
 ---
 
-## Deployment
+## Running with Docker (Recommended)
 
-This project is configured for deployment using **Render** via `render.yaml`.
+This project uses Docker to enable full OCR support (Tesseract + Poppler).
+
+### 1. Build Docker image
+
+```
+docker build -t invoice-fraud-app .
+```
+
+### 2. Run container
+
+```
+docker run -p 10000:10000 invoice-fraud-app
+```
+
+### 3. Open in browser
+
+```
+http://localhost:10000
+```
+
+---
+
+## Deployment (Render + Docker)
+
+1. Push code to GitHub
+2. Go to Render Dashboard
+3. Create **New Web Service**
+4. Select your repo
+5. Choose **Environment → Docker**
+6. Deploy
 
 ---
 
@@ -91,7 +121,7 @@ This project is configured for deployment using **Render** via `render.yaml`.
 * **Frontend**: HTML, CSS, JavaScript (Canvas API)
 * **Backend**: FastAPI
 * **ML Model**: Scikit-learn
-* **OCR**: Tesseract / custom pipeline
+* **OCR**: Tesseract + Poppler (via Docker)
 
 ---
 
@@ -99,7 +129,8 @@ This project is configured for deployment using **Render** via `render.yaml`.
 
 * Combines **rule-based + ML + graph detection**
 * Interactive **visual UI (network graph background)**
-* Modular backend design (clean separation of logic)
+* Full OCR support (PDF + Image) using Docker
+* Clean modular backend architecture
 
 ---
 
@@ -109,5 +140,4 @@ This project is configured for deployment using **Render** via `render.yaml`.
 * Graph database (Neo4j)
 * Dashboard analytics
 * User authentication
-
 
