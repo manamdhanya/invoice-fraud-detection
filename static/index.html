@@ -291,46 +291,68 @@ async function analyze() {
   resultBox.innerText = "Processing...";
   checks.innerHTML = "";
   graphBox.innerHTML = "";
+  ocrBox.innerText = "";
 
-  const res = await fetch("/predict", { method: "POST", body: formData });
-  const data = await res.json();
+  try {
+    const res = await fetch("/predict", { method: "POST", body: formData });
+    const data = await res.json();
 
-  resultBox.className = "result " + data.prediction.toLowerCase();
-  resultBox.innerText = data.prediction;
-
-  ocrBox.innerText = data.ocr_text;
-
-  const featureMap = [
-    ["GSTIN Valid", data.features.gstin_valid === 1],
-    ["Foreign Currency", data.features.foreign_currency === 0],
-    ["Future Date", data.features.future_date === 0],
-    ["Suspicious Vendor", data.features.suspicious_vendor === 0],
-    ["Amount Anomaly", data.features.amount_anomaly === 0],
-  ];
-
-  featureMap.forEach(f => {
-    const div = document.createElement("div");
-    div.className = "check " + (f[1] ? "pass" : "fail");
-    div.innerText = f[0];
-    checks.appendChild(div);
-  });
-
-  const div = document.createElement("div");
-
-  if (data.prediction.toLowerCase() === "fraud") {
-    div.className = "graph-box graph-warning";
-    div.innerText = "Suspicious activity detected";
-  } else {
-    if (data.graph_flag === 1) {
-      div.className = "graph-box graph-safe";
-      div.innerText = "No suspicious relationships";
-    } else {
-      div.className = "graph-box graph-warning";
-      div.innerText = "Suspicious network detected";
+    // 🔥 HANDLE PDF FALLBACK
+    if (
+      !data.ocr_text ||
+      data.ocr_text.includes("not available") ||
+      data.ocr_text.includes("Error")
+    ) {
+      resultBox.className = "result";
+      resultBox.innerText = "⚠️ PDF not supported in deployed version";
+      ocrBox.innerText = data.ocr_text;
+      return;
     }
-  }
 
-  graphBox.appendChild(div);
+    // RESULT
+    resultBox.className = "result " + data.prediction.toLowerCase();
+    resultBox.innerText = data.prediction;
+
+    // OCR
+    ocrBox.innerText = data.ocr_text;
+
+    // FEATURES
+    const featureMap = [
+      ["GSTIN Valid", data.features.gstin_valid === 1],
+      ["Foreign Currency", data.features.foreign_currency === 0],
+      ["Future Date", data.features.future_date === 0],
+      ["Suspicious Vendor", data.features.suspicious_vendor === 0],
+      ["Amount Anomaly", data.features.amount_anomaly === 0],
+    ];
+
+    featureMap.forEach(f => {
+      const div = document.createElement("div");
+      div.className = "check " + (f[1] ? "pass" : "fail");
+      div.innerText = f[0];
+      checks.appendChild(div);
+    });
+
+    // GRAPH
+    const div = document.createElement("div");
+
+    if (data.prediction.toLowerCase() === "fraud") {
+      div.className = "graph-box graph-warning";
+      div.innerText = "Suspicious activity detected";
+    } else {
+      if (data.graph_flag === 1) {
+        div.className = "graph-box graph-safe";
+        div.innerText = "No suspicious relationships";
+      } else {
+        div.className = "graph-box graph-warning";
+        div.innerText = "Suspicious network detected";
+      }
+    }
+
+    graphBox.appendChild(div);
+
+  } catch (err) {
+    resultBox.innerText = "❌ Server error. Try again.";
+  }
 }
 
 const canvas = document.getElementById("networkCanvas");
